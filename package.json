@@ -1,0 +1,14 @@
+{
+  "name": "express_typescript_firebase_api",
+  "version": "1.0.0",
+  "description": "NodeJS Express Api to communicate with firebase",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Abdullah khan",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.1.3"
+  }
+}

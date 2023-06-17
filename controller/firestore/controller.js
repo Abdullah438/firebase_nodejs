@@ -1,4 +1,4 @@
-import { db } from "../../backend/config.js";
+import { db, auth } from "../../backend/config.js";
 import {
   doc,
   setDoc,
@@ -7,11 +7,10 @@ import {
   getDoc,
   getDocs,
   collection,
-  deleteDoc
+  deleteDoc,
 } from "firebase/firestore";
 import { validationResult } from "express-validator";
 import { v4 as uuidv4 } from "uuid";
-import storage from "node-persist";
 // Create a new user
 const createUser = async (req, res) => {
   const result = validationResult(req);
@@ -20,18 +19,33 @@ const createUser = async (req, res) => {
       errors: result.array(),
     });
   } else {
-    const body = {
-      id: uuidv4(),
-      name: req.body.name,
-      email: req.body.email,
-    };
-    await setDoc(doc(db, "Users", body.id), body);
-    await storage.init();
-    const accessToken = await storage.getItem("access-token");
-    res.setHeader("Authorization", `Bearer ${accessToken}`);
-    res.status(201).json({
-      message: "User created successfully",
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        console.log("User is signed in");
+      } else {
+        console.log("User is not signed in");
+      }
     });
+
+    if (auth.currentUser != null) {
+      const body = {
+        id: uuidv4(),
+        name: req.body.name,
+        email: req.body.email,
+      };
+      await setDoc(doc(db, "Users", body.id), body);
+      await storage.init();
+      const accessToken = await storage.getItem("access-token");
+      res.setHeader("Authorization", `Bearer ${accessToken}`);
+      res.status(201).json({
+        message: "User created successfully",
+      });
+    } else {
+      res.status(401).json({
+        code: 401,
+        message: "Unauthorized access",
+      });
+    }
   }
 };
 
@@ -44,32 +58,41 @@ const createMultipleUsers = async (req, res) => {
       errors: result.array(),
     });
   } else {
-    const batch = writeBatch(db);
-    const extendedUsers = users.map((user) => {
-      return {
-        id: uuidv4(),
-        name: user.name,
-        email: user.email,
-      };
-    });
-    extendedUsers.forEach((user) => {
-      const userRef = doc(db, "Users", user.id);
-      batch.set(userRef, user);
-    });
-    batch
-      .commit()
-      .then(() => {
-        res.status(201).json({
-          message: "Users created successfully",
-        });
-      })
-      .catch((error) => {
-        res.status(400).json({
-          message: error.message,
-        });
+    if (auth.currentUser != null) {
+      const batch = writeBatch(db);
+      const extendedUsers = users.map((user) => {
+        return {
+          id: uuidv4(),
+          name: user.name,
+          email: user.email,
+        };
       });
+      extendedUsers.forEach((user) => {
+        const userRef = doc(db, "Users", user.id);
+        batch.set(userRef, user);
+      });
+      batch
+        .commit()
+        .then(() => {
+          res.status(201).json({
+            message: "Users created successfully",
+          });
+        })
+        .catch((error) => {
+          res.status(400).json({
+            message: error.message,
+          });
+        });
+    }
+    {
+      res.status(401).json({
+        code: 401,
+        message: "Unauthorized access",
+      });
+    }
   }
 };
+
 
 // Get all users
 const getAllUsers = async (req, res) => {

@@ -5,7 +5,6 @@ import {
 } from "firebase/auth";
 import { auth } from "../../backend/config.js";
 import { validationResult } from "express-validator";
-import storage from "node-persist";
 
 // Create new firebase user
 const createUser = async (req, res) => {
@@ -23,11 +22,9 @@ const createUser = async (req, res) => {
         password,
       );
       const user = userCredential.user;
-      await storage.init();
-      await storage.setItem("access-token", user.stsTokenManager.accessToken);
       return res.status(200).json({
         message: `User created successfully`,
-        accessToken: user.stsTokenManager.accessToken, // Access token
+        user: userCredential.user, // Firebase user object
       });
     } catch (error) {
       return res.status(400).json({
@@ -56,12 +53,9 @@ const signInUser = async (req, res) => {
         email,
         password,
       );
-      const user = userCredential.user;
-      await storage.init();
-      await storage.setItem("access-token", user.stsTokenManager.accessToken);
       return res.status(200).json({
         message: `User signed in successfully`,
-        accessToken: user.stsTokenManager.accessToken, // Access token
+        user: userCredential.user, // Access token
       });
     } catch (error) {
       res.status(400).json({

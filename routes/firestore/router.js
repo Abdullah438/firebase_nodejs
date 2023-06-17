@@ -5,7 +5,7 @@ import {
   createUser,
   createMultipleUsers,
   deleteUser,
-} from "../../controller/users/controller.js";
+} from "../../controller/firestore/controller.js";
 import { body } from "express-validator";
 
 const router = Router();
